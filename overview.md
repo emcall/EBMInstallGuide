@@ -10,6 +10,7 @@ The EBM software can be broken up into two main pieces: the Webserver Interface 
 Each part of the system interacts with other parts, as outlined in the following diagram:
 ![diagram of the system structure](Dataflow_Structure.png)
 >(White arrows signify a one-way dataflow, where data is recieved but not modified at its source. Grey boxes indicate items which are external to this repository.)
+
 The PAC Communicator, Webserver Interface, and background processing (cron and daemons) do not directly interact with one another; rather, metadata is stored within the MySQL database, and PDF files are saved to a shared location in the file system.  
 The cron jobs run every two minutes in the background, processing PDF files into a printable format. 
 
