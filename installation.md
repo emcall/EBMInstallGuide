@@ -2,27 +2,33 @@
 
 ---
 # EBM Installation Guide 
-The following steps will convert a Mac Mini into a working EBM machine, ready to be hooked up to the printer hardware. 
+The following steps will convert a Mac Mini into a working EBM machine, ready to be hooked up to the printer hardware or to serve as a work environment for engineers improving the code. 
 
 It is very important to perform these steps in order, as many steps rely on setup from previous steps. 
-Be sure to check the [troubleshooting doc](troubleshooting.md) if you run into an error.
+Be sure to check the troubleshooting doc if you run into an error.
 
 Code snippets should be run in Terminal with administrative privileges. 
 
-All of the following instructions, as well as machine operations, need to be run as a user with full Administrator privileges named 'ebm'. If this user account does not exist, create it and sign in.
+All of the following instructions, as well as machine operations, need to be run as an Administrator.
 
 
 ## 1. Download and Install Dependencies
 
-### a) Install XCode
 
-Xcode can be found in the App Store. Install with default settings.
+### a) Create user 'ebm'
+
+If there is no user account named 'ebm', create it by going to System Settings, then Users and Groups. Give the account full Administrator privileges. Sign into this account.
 
 
-### b) Download this repository
+### b) Install XCode
 
-The repository should be created in root for user *ebm* (`/Users/ebm` or `~`). 
-Run:
+Xcode can be found in the App Store. Install it with default settings.
+
+
+### c) Download this repository
+
+The repository should be cloned into root for the user *ebm* (`/Users/ebm` or `~`). 
+To clone the repository, run:
 ```
 cd ~
 git clone https://[USERNAME]@bitbucket.org/teamodb/ebm-code.git
@@ -32,15 +38,16 @@ where [USERNAME] is your bitbucket username. You will be prompted for your bitbu
 If the clone was successful, you will now see a new directory named 'ebm-code' in your user root.
 
 
-### c) Download/Install MySQL Community Server 8. 
+### d) Download/Install MySQL Community Server 8. 
 
 Download the DMG archive from the [MySQL website](https://dev.mysql.com/downloads/mysql/), then run the DMG file. The defaults settings are fine (install for all users, default install location). This will install under `/usr/local/mysql`.
 
 >Remember what password you choose for root as you will need it later in the database setup step.
 
 
-### d) Set up Python packages
-Python 2.7 should, by default, come with Mac OSX. However, some modules need to be installed. 
+### e) Install Python packages
+Python 2.7 comes by default with Mac OSX. However, the codebase uses a few packages that are not installed by default. 
+To install these packages, run: 
 ```
 sudo easy_install pip
 sudo pip install MySQL-python
@@ -49,29 +56,30 @@ sudo pip install cherrypy --upgrade --ignore-installed six
 ```
 
 
-### e) Download/Install Qt.
+### f) Download/Install Qt.
 
 Download [Open Source Qt](https://www.qt.io/download), using the Online Installer.
-When asked what to install, choose *MacOS and Sources*. Install under `Users/ebm/Qt`. 
+When asked what to install, choose *MacOS and Sources*. Install under `Users/ebm/Qt` . 
 
-You may get an error "XCode is not installed" even though you have installed XCode. This is a bug on Apple's end and can be safely ignored.
+You may get the error "XCode is not installed" even though you have installed XCode. This is a bug on Apple's end and can be safely ignored.
 
 
-### f) Install Homebrew
-Homebrew is a tool which makes package installation easier. It will be used later in the setup process.
+### g) Install Homebrew
+Homebrew is a tool that makes package installation easier. It will be used later in the setup process.
 Run:
 ```
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-### g) Install printer drivers
+
+### h) Install printer drivers
 Install the required drivers for the cover and block printers. Plugging the machines in should automatically install them. 
->**Warning**: This step *must* be performed before running the PAC Communicator. 
 
 ## 2. Configure MySQL Database
 
 ### a) Add MySQL to PATH
-Add MySQL as an environment variable to the `PATH`. This can be done with the following command:
+MySQL must be added an environment variable to the `PATH`. 
+To add MySQL to `PATH`, run:
 ```
 echo 'export PATH="/usr/local/mysql/bin:$PATH"' >> ~/.bash_profile
 ```
@@ -81,7 +89,7 @@ Pull up the MySQL monitor terminal via the command line by running:
 ```
 mysql -u root -p
 ```
-and enter root password when prompted. Then run the following commands to set up the database and default user:
+Enter the root password from step 1d when prompted. Then, to set up the database and default user, run:
 ```
 CREATE DATABASE IF NOT EXISTS odb;
 CREATE USER 'odb'@'localhost' IDENTIFIED WITH mysql_native_password BY '[PASSWORD]';
@@ -90,17 +98,11 @@ GRANT ALL ON odb.* TO  'odb'@'localhost';
 where [PASSWORD] is the password for the root user. 
 
 ### c) Create tables
-Included in this repository under `setup/command_line` is a script named `setup_mysql_tables.sh`, which will run each file in the sql directory in order. Call it via
+Included in this repository under `setup/command_line` is a script named `setup_mysql_tables.sh` , which will run each file in the sql directory in order. Call it via
 ```
 sh ~/ebm-code/setup/command_line/setup_mysql_tables.sh
 ```
-and enter the MySQL root password when prompted. 
-
-Alternatively, the tables can be created individually via running each script in the sql directory in the MySQL monitor terminal:
-```
-source /Users/ebm/ebm-code/sql/[TABLENAME].sql
-```
-where [TABLENAME] is the name of the table, for example available_block_printers.
+Enter the MySQL root password when prompted. 
 
 **WARNING:** running these scripts will drop any existing tables. Be sure to back up the database if it has already been used.
 
@@ -109,7 +111,7 @@ where [TABLENAME] is the name of the table, for example available_block_printers
 
 ### a) Add QT to PATH
 
-Add QT as an environment variable to the   `PATH`:
+To add QT as an environment variable to the `PATH`, run:
 
 ```
 echo 'export PATH="[PATH/TO/QT]:$PATH"' >> ~/.bash_profile
@@ -120,20 +122,23 @@ where [PATH/TO/QT] points to the bin directory for Qt, for example
 `/Users/ebm/Qt/5.12.3/clang_64/bin`
 
 
-### b) Set up the QMySQL Driver
-
+### b) Set up the QMYSQL Driver
+Most versions of Qt do not come with the QMYSQL Driver available. Without it, the PAC Communicator will be unable to connect to the database. To check if the QMYSQL driver is present, go to the directory `/Users/ebm/Qt/[VERSION]/clang_64/plugins/sqldrivers` and look for `libqsqlmysql.dylib` (make sure to check the filename, as there are similarly named files: this one is Lib Q SQL MySQL . Dylib). If this file exists, move on to substep ii; otherwise, continue to substep i. 
+>**NOTE:** There are two different directories named `sqldrivers` . Make sure the full directory path is correct. 
 
 #### i) Compile QMYSQL to create dylib files
-Some versions of Qt do not come with the QMYSQL Driver available. First, recompile the source via the 'configure' script.
+You will need to recompile the source in order to add the QMYSQL driver using the included 'configure' script. 
+Run:
 ```
 cd ~/Qt/[VERSION]/Src
 ./configure -sql-mysql
 make
 ```
-where [VERSION] is the version of Qt, ex 5.12.3
+where [VERSION] is the version of Qt, ex 5.12.3 .
+
 > **NOTE:** This step takes several hours. This is a good time to go to lunch or take a nap. *Do not continue with installation until the compiler is finished.*
 
-Once the build completes, go into the source for MySQL and make it:
+Once the build completes, go into the source for MySQL and make it by running:
 ```
 cd /Users/ebm/Qt/[VERSION]/Src/qtbase/src/plugins/sqldrivers/mysql
 qmake
@@ -146,14 +151,14 @@ where [VERSION] is the version of Qt, ex `5.12.3`
 Once this is done, check to see if it was successful by going to the directory `/Users/ebm/Qt/[VERSION]/clang_64/plugins/sqldrivers`
 and looking for libqsqlmysql.dylib.
 
->**NOTE:** This is a different directory from the one in the command line code. There are two directories named `sqldrivers`, one under `Src/qtbase/src` and one under `clang_64`. 
+
 
 
 #### ii) Load QMYSQL driver
 
-Qt needs to be told where to find MySQL. If it cannot find the MySQL Client Library, setup scripts and the PAC Communicator will fail with the error "QMYSQL driver not loaded."
+Qt needs to be told where to find MySQL. Until you pinpoint the MySQL Client Library, setup scripts and the PAC Communicator will fail with the error "QMYSQL driver not loaded."
 
-First step is to check what version(s) of the MySQL Client Library you have. This is a Dynamic Library (dylib) file named "libmysqlclient" that lives within mysql's lib directory.
+Check what version(s) of the MySQL Client Library you have. This is a Dynamic Library (dylib) file named "libmysqlclient" found in mysql's lib directory.
 
 Run:
 ```
@@ -161,30 +166,31 @@ cd /usr/local/mysql/lib
 ls -a
 ```
 
-You will get a list of all of the files in that directory. Check if you have a file named exactly:
+You will get a list of all of the files in that directory. Check if you have a file named *exactly*:
 `libmysqlclient.dylib`
 
-If you do not have this file, there should be a file 
+If you do not have this file, there should be a file named:
 `libmysqlclient.[X].dylib`
 
- where *[X]* is a version number. If this is the case, take note of the number.
+ where [X] is a version number. If this is the case, take note of the number.
 
-If neither are present, you may need to install Connector/C. This can be done using Homebrew. Run:
+If neither are present, you may need to install Connector/C using Homebrew. 
+Run:
 ```
 brew install mysql-connector-c
 ```
-Then check again for the MySQL client library in `/usr/local/mysql/lib`.
+Then check again for a MySQL client library file (`libmysqlclient.dylib` or `libmysqlclient.[X].dylib`) in `/usr/local/mysql/lib`.
 
-Once you have found the `libmysqlclient.dylib` file, check to see what library Qt is expecting. Go to the SQL Drivers directory under Plugins for the compiler (clang) you are using. In the Terminal, run:
+Once you have found the `libmysqlclient.dylib` file, check to see what library Qt is expecting. Go to the SQL Drivers directory under Plugins for the compiler (clang) you are using and run otool to list the libraries. In the Terminal, run:
 ```
 cd ~/Qt/[VERSION]/clang_64/plugins/sqldrivers
 otool -L libqsqlmysql.dylib
 ```
-where *[VERSION]* is the version of Qt you installed (ex 5.12.3). (Make sure to type the filename correctly: it is `Lib Q SQL MySQL`)
+where *[VERSION]* is the version of Qt you installed (ex 5.12.3). 
 
-This command will list the libraries that Qt's SQL Driver is looking for. The important one is `libmysqlclient`. Make sure that `libmysqlclient` points to the client file. 
+This command will list the libraries that Qt's SQL Driver is looking for. The important one is `libmysqlclient`. This library should point to the exact path of the dylib file you located (either `libmysqlclient.dylib` or `libmysqlclient.[X].dylib` in `/usr/local/mysql/lib`). 
 
-If the client version is wrong, then while within the same directory, run
+If the SQL driver is not pointing to the correct file, you will need to run install_name_tool to correct it. While still in the `~/Qt/[VERSION]/clang_64/plugins/sqldrivers` directory, run:
 ```
 install_name_tool -change [OLD PATH] [NEW PATH] libqsqlmysql.dylib
 ```
@@ -197,16 +203,16 @@ install_name_tool -change @rpath/libmysqlclient.20.dylib /usr/local/mysql/lib/li
 ### c) Run *Printer Settings* 
 
 Run the *Printer Settings* app inside the printer_settings directory, and choose the settings which match your current setup. If you would rather do this via terminal, you will need to manually insert a new row in the settings table via MySQL.
-Note that the only printer drivers listed by this app are ones which already exist on the machine. If drivers are added later, re-run the app. 
+>**NOTE** The only printer drivers listed by this app are ones which already exist on the machine. If drivers are added later, you will need to re-run the *Printer Settings* app. 
 
 ### d) Compile the PAC Communicator
-cd into PAC_Communicator and run
+Change directories to PAC_Communicator and run:
 ```
 qmake
 make
 ```
 This will create the PAC Communicator app under /Users/ebm. 
->**Note**: The PAC Comm will crash on opening if you have not saved settings via the printer settings app (see previous step).
+>**NOTE**: The PAC Comm will crash on opening if you have not saved your settings via the *Printer Settings* app (previous step) or have not installed printer drivers (step 1.H).
 
 You can test the PAC Communicator in Island Mode (disconnected from PAC) via the following command:
 ```
@@ -214,37 +220,31 @@ You can test the PAC Communicator in Island Mode (disconnected from PAC) via the
 ```
 
 
-If everything is set up properly, the PAC Communicator should run without crashing or producing errors. If not run in Island Mode it will likely hang but should not crash.
+If everything is set up properly, the PAC Communicator should run in Island Mode without crashing or producing errors. If you do not run in Island Mode it will hang but should not crash.
 
 
 ## 4. Webserver Configuration
 
 ### a) Set up Apache Server 
-Apache should be included with the OS; all you need to do is to change the configuration and start it.
+Apache is included with Mac OS; all you need to do is to change the configuration and start it.
+There is a file in this repository under `setup/` named `httpd.conf` . Replace the file `/etc/apache2/httpd.conf` with the `httpd.conf` file found in this repository.
 
-Replace the file in
-```
-/etc/apache2/httpd.conf
-```
-with the httpd.conf file in this repository.
-
-To start the server, run 
+To start the server, run:
 ```
 sudo apachectl start
 ```
-then test by opening Safari and going to "localhost" (nothing else, no http or .com, make sure it doesn't do a google search). 
+You can then test the configuration by opening Safari and going to "localhost" (do not add http:// or .com). 
 
 ### b) PHP Setup
-Copy the included PHP.ini file to
-```
-/etc/php.ini
-```
+There is a file in this repository under `setup/` named `php.ini` . Replace the file `/etc/php.ini` with the `php.ini` file found in this repository.
 
 ## 5. Network/Bundle Processor Setup
 
 For security reasons, the credentials for the network connection are not included in this repository. In order to connect to the network to pull the network catalog, you will need to add these in manually to the table "credentials". You will additionally need to provide credentials to the order_tosser script. Please confirm each of these values before setup. 
 
 ### a) In the database
+To add credentials into the database, run:
+
 ```
 mysql odb -uodb -p
 INSERT INTO credentials VALUES id=1, type='active', ready_url='https://web.odbnetwork.com/readyJobs', update_url='https://web.odbnetwork.com/update', ebm_id='[EBM ID]', ebm_passwd='[EBM PASSWORD]', sftp_hostname='island.odbnetwork.com', sftp_port='22', sftp_uname='[SFTP USERNAME]', sftp_passwd='[SFTP PASSWORD]', error_update_url='https://web.odbnetwork.com/errorUpdate', local_job_updater_url='https://web.odbnetwork.com/localEbmJobs';
@@ -261,7 +261,7 @@ where:
 
 
 ### b) In order_tosser
-Create the file /bin/order_tosser.ini with the following:
+Create a file `/bin/order_tosser.ini` that contains the following:
 ```
 net_uname   = [EBM ID]
 net_passwd  = [EBM PASSWORD]
@@ -270,12 +270,13 @@ net_ip      = [STORE IP ADDRESS]
 ```
 
 ## 6. Set MySQLdb library paths
-like with Qt, Python needs to know where the MySQL library is, along with some other dependencies (SSL and Crypto)
+As is the case with Qt, Python needs to know where the MySQL library is, along with some other dependencies (SSL and Crypto).
+Check where Python is expecting libmysqlclient with otool. Run:
 ```
 cd /Library/Python/[VERSION]/site-packages/MySQLdb/
 otool -l _mysql.so
 ```
-This will tell you where it thinks libmysqlclient is and what versions of libssl and libcrypto it's looking for.
+This will tell you where Python ecxpects libmysql client, as well as which versions of libssl and libcrypto it expects. If these do not match, run:
 ```
 install_name_tool -change @rpath/libmysqlclient.[version].dylib /usr/local/mysql/lib/libmysqlclient.dylib _mysql.so
 install_name_tool -change libssl.[version].dylib /usr/local/opt/openssl/lib/libssl.[version].dylib _mysql.so
@@ -293,7 +294,7 @@ sudo brew install gpgme
 ```
 
 ### b) Set up keys
-In order to zip/unzip data bundles from the network you need the GPG keys and passphrase. The keys look something like this:
+In order to zip/unzip data bundles from the network you need the GPG keys and passphrase. The keys look like this:
 
 ```
 -----BEGIN PGP [PUBLIC/PRIVATE] KEY BLOCK-----
@@ -301,16 +302,9 @@ In order to zip/unzip data bundles from the network you need the GPG keys and pa
 -----END PGP [PUBLIC/PRIVATE] KEY BLOCK-----
 ```
 
-You should have one private and one public, and additionally, have a short passphrase (approx 15 bytes). 
-Create a file 
-
-```
-/opt/odb/gpg/passphrase.txt 
-```
-
-and paste the passphrase (no leading or trailing characters) inside.
-Additionally, save the keys in txt files (location does not matter)
-For both the public and private key, run in terminal:
+You should have one private key and one public key, and additionally, have a short passphrase (approximately 15 bytes). 
+Create a file `/opt/odb/gpg/passphrase.txt` and paste the passphrase (with no leading or trailing characters) inside.
+Then, save the keys in separate txt files (location does not matter). For both the public and private key, run in terminal:
 
 ```
 gpg --import [PATH/TO/KEY.txt]
@@ -328,20 +322,15 @@ gpg --edit-key [KEY] trust quit
 where [KEY] is the key returned from list-keys. In this prompt, re-enter the passphrase, then choose option '5', then 'y' to confirm. 
 
 ### c) Connect to TTY
-Now you need to set the GPG environment variable to use TTY correctly. Add this to PATH:
+Now you need to set the GPG environment variable to use TTY correctly. 
+To add it to PATH, run:
 
 ```
 echo 'export GPG_TTY=$(tty)' >> ~/.bash_profile
 ```
 
 ### d) Allow automatic passphrase entry
-Finally, configure GPG-Agent to allow for automatic passphrase entry. In the file
-
-```
-/Users/ebm/.gnupg/gpg-agent.conf
-```
-
-add the line
+Configure GPG-Agent to allow for automatic passphrase entry. In the file `/Users/ebm/.gnupg/gpg-agent.conf` , add the line:
 
 ```
 allow-loopback-pinentry
@@ -349,11 +338,11 @@ allow-loopback-pinentry
 
 Note that gpg-agent.conf may not exist; if it does not, create it.
 
-## 8. Makebook/Netmakebook
+## 8. Set up Makebook/Netmakebook
 
 ### a) Create necessary directories
 The code is expecting a few extra directories which need full read, write, and execute permissions.
-Run:
+To create them, run:
 ```
 mkdir /opt/odb/catalog
 mkdir /opt/odb/makebook
@@ -367,7 +356,8 @@ sudo chmod -R 777 /opt/odb/network
 ```
 
 ### b) Install dependencies
-Makebook and netmakebook rely on three libraries:
+Makebook and netmakebook rely on three libraries. 
+To install these libraries, run:
 ```
 brew install poppler
 brew install ghostscript
@@ -376,28 +366,21 @@ brew install imagemagick
 
 ### c) Copy test book files into catalog
 
-Move the five directories under setup/catalog into /opt/odb/catalog. 
+Move the five directories found under `setup/catalog` into `/opt/odb/catalog` . 
 
 ### d) Create cron jobs
 run
 ```
 crontab -e
 ```
-then paste the contents of setup/crontab.txt into the editor. 
-To exit the editor, press the Esc key, then, :, then w, then q, then enter to save changes.
+then paste the contents of `setup/crontab.txt` into the editor. 
+To exit the editor, press the `Esc` key, then `:` , then `w` , then `q` , then enter to save changes.
 
 
 
 ## 9. PAC Connection
 
-The PAC lives on
-```
-http://192.168.0.250/views/main_a.html
-```
-and must be opened in a browser window. It also requires a specific extension to allow its legacy Java applet to run. The extension has been included under `setup/chrome_extension`.
+The PAC communicates on `http://192.168.0.250/views/main_a.html` and must be opened in a browser window. It also requires a specific extension to allow its legacy Java applet to run. The extension is in this repository under `setup/chrome_extension`.
 
-In chrome, go to
-chrome://extensions/
-
-and turn on Developer Mode (upper right-hand corner). Then click "Load Unpacked" (upper left) and select the folder. 
-When opening the PAC you will have to enable this extension.
+In chrome, go to `chrome://extensions/` and turn on Developer Mode (upper right-hand corner). Then click "Load Unpacked" (upper left-hand corner) and select the folder. 
+When opening the PAC you will need to enable this extension.
