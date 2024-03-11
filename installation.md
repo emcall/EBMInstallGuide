@@ -78,7 +78,7 @@ Install the required drivers for the cover and block printers. Plugging the mach
 ## 2. Configure MySQL Database
 
 ### a) Add MySQL to PATH
-MySQL must be added an environment variable to the `PATH`. 
+MySQL must be added as an environment variable to the `PATH`. 
 To add MySQL to `PATH`, run:
 ```
 echo 'export PATH="/usr/local/mysql/bin:$PATH"' >> ~/.bash_profile
